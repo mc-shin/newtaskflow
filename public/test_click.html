@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background: #0f172a; color: #e2e8f0; font-family: sans-serif; padding: 20px; }
+#editor {
+  border: 1px solid #334155;
+  padding: 24px;
+  background: #1e293b;
+  min-height: 400px;
+  font-size: 14px;
+  line-height: 1.625;
+}
+#editor table { width: 100%; border-collapse: collapse; }
+#editor td, #editor th {
+  border: 1px solid #475569;
+  padding: 12px 16px;
+  vertical-align: top;
+  font-size: 13px;
+}
+#editor p { margin: 0 0 4px; }
+
+/* THE FIX: placeholder fills entire cell */
+[contenteditable] td > p[data-cell-placeholder="true"],
+[contenteditable] th > p[data-cell-placeholder="true"] {
+  display: block;
+  margin: -0.75rem -1rem !important;
+  padding: 0.75rem 1rem !important;
+  min-height: 1.5em;
+  cursor: text;
+}
+
+#log { margin-top: 20px; padding: 10px; background: #000; color: #0f0; font-family: monospace; font-size: 12px; white-space: pre-wrap; min-height: 100px; }
+</style>
+</head>
+<body>
+<h1>Cell Click Test</h1>
+<p>Click any empty cell. The cursor should appear in that cell.</p>
+<div id="editor" contenteditable="true" suppressContentEditableWarning>
+  <table>
+    <tr>
+      <th>프로젝트</th>
+      <th>실적</th>
+      <th>계획</th>
+      <th>비고</th>
+    </tr>
+    <tr>
+      <td><p>6G</p></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><p>WING</p></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><p>P5G</p></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+</div>
+<div id="log"></div>
+<script>
+const editor = document.getElementById('editor');
+const log = document.getElementById('log');
+function logMsg(msg) {
+  log.textContent = new Date().toISOString().slice(11, 19) + ' ' + msg + '\n' + log.textContent;
+}
+
+// fillEmptyCells on mount
+function fillEmpty() {
+  let count = 0;
+  editor.querySelectorAll('td, th').forEach((cell) => {
+    if (cell.children.length > 0) return;
+    if ((cell.textContent || '').trim()) return;
+    const p = document.createElement('p');
+    p.innerHTML = '<br>';
+    p.setAttribute('data-cell-placeholder', 'true');
+    cell.appendChild(p);
+    count++;
+  });
+  logMsg(`Filled ${count} empty cells`);
+}
+fillEmpty();
+
+// mousedown handler
+editor.addEventListener('mousedown', (e) => {
+  const target = e.target;
+  const cell = target.closest('td, th');
+  if (!cell) {
+    logMsg(`mousedown: NOT IN CELL (target=${target.tagName})`);
+    return;
+  }
+  let ownText = '';
+  cell.childNodes.forEach((n) => {
+    if (n.nodeType === 3) ownText += n.textContent || '';
+  });
+  if (ownText.trim()) {
+    logMsg(`mousedown: cell has text, skip (text="${ownText.trim()}", target=${target.tagName})`);
+    return;
+  }
+  let placeholder = cell.querySelector(':scope > p');
+  if (!placeholder) {
+    placeholder = document.createElement('p');
+    placeholder.innerHTML = '<br>';
+    placeholder.setAttribute('data-cell-placeholder', 'true');
+    cell.appendChild(placeholder);
+    logMsg(`mousedown: created placeholder (target=${target.tagName})`);
+  }
+  setTimeout(() => {
+    if (!placeholder || !editor.contains(placeholder)) return;
+    editor.focus();
+    const range = document.createRange();
+    range.setStart(placeholder, 0);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    logMsg(`mousedown setTimeout: cursor placed in placeholder. activeElement=${document.activeElement.tagName}#${document.activeElement.id||''}`);
+  }, 0);
+});
+
+// Track which cell currently has cursor
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  const cell = (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.closest('td, th');
+  if (!cell) return;
+  const row = cell.closest('tr');
+  const rowIndex = row ? Array.from(row.parentElement.children).indexOf(row) : -1;
+  const colIndex = Array.from(cell.parentElement.children).indexOf(cell);
+  logMsg(`selectionchange: cursor in row ${rowIndex}, col ${colIndex}`);
+});
+</script>
+</body>
+</html>

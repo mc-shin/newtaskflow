@@ -1,0 +1,510 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0b0e17;
+  --color-foreground: #e2e8f0;
+  --color-card: #111827;
+  --color-card-hover: #1a2236;
+  --color-border: #1e293b;
+  --color-border-hover: #334155;
+  --color-muted: #64748b;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-muted: rgba(99, 102, 241, 0.15);
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #06b6d4;
+  --color-sidebar-bg: #080b12;
+  --color-sidebar-hover: #111827;
+  --color-sidebar-active: rgba(99, 102, 241, 0.15);
+  --color-input: #1e293b;
+  --color-input-focus: #334155;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* ─── Light Mode ─────────────────────────────────────────── */
+/* Like the image: white bg, white cards, black text, light gray borders */
+[data-theme="light"] {
+  --color-background: #f5f5f5 !important;
+  --color-foreground: #1a1a1a !important;
+  --color-card: #ffffff !important;
+  --color-card-hover: #fafafa !important;
+  --color-border: #e5e5e5 !important;
+  --color-border-hover: #d4d4d4 !important;
+  --color-muted: #a3a3a3 !important;
+  --color-muted-foreground: #737373 !important;
+  --color-accent-muted: rgba(99, 102, 241, 0.08) !important;
+  --color-sidebar-bg: #ffffff !important;
+  --color-sidebar-hover: #f5f5f5 !important;
+  --color-sidebar-active: rgba(99, 102, 241, 0.06) !important;
+  --color-input: #f5f5f5 !important;
+  --color-input-focus: #e5e5e5 !important;
+}
+
+/* text-white → dark in light mode, BUT only for headings/labels, not on colored backgrounds */
+/* We target specific contexts where text-white is used for headings */
+[data-theme="light"] h1.text-white,
+[data-theme="light"] h2.text-white,
+[data-theme="light"] h3.text-white,
+[data-theme="light"] h4.text-white,
+[data-theme="light"] p.text-white,
+[data-theme="light"] span.text-white,
+[data-theme="light"] div > .text-white:not([style*="background"]) {
+  color: #1a1a1a !important;
+}
+
+/* Headings inside cards/sections */
+[data-theme="light"] .text-white.font-bold,
+[data-theme="light"] .text-white.font-semibold,
+[data-theme="light"] .text-white.font-medium {
+  color: #1a1a1a !important;
+}
+
+/* KEEP white on colored backgrounds */
+[data-theme="light"] [style*="background"] {
+  color: #ffffff;
+}
+
+[data-theme="light"] .bg-accent,
+[data-theme="light"] .bg-accent-hover,
+[data-theme="light"] .bg-danger,
+[data-theme="light"] .bg-success {
+  color: #ffffff !important;
+}
+
+/* Dark backgrounds in components → white/light */
+[data-theme="light"] .bg-background {
+  background-color: #f5f5f5 !important;
+}
+
+[data-theme="light"] .bg-card {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-card\/50 {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="light"] .bg-sidebar-bg {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-sidebar-hover {
+  background-color: #f5f5f5 !important;
+}
+
+[data-theme="light"] .bg-sidebar-active {
+  background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+/* Borders */
+[data-theme="light"] .border-border {
+  border-color: #e5e5e5 !important;
+}
+
+[data-theme="light"] .border-border-hover {
+  border-color: #d4d4d4 !important;
+}
+
+[data-theme="light"] .border-border\/50 {
+  border-color: rgba(229, 229, 229, 0.5) !important;
+}
+
+/* Special surfaces */
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e5e5e5 !important;
+}
+
+[data-theme="light"] .gradient-border {
+  background: #ffffff !important;
+  border-color: #e5e5e5 !important;
+}
+
+/* ── Unified hover color: #f0f0f0 ── */
+[data-theme="light"] .bg-card-hover\/30,
+[data-theme="light"] .bg-card-hover\/20,
+[data-theme="light"] .hover\:bg-card-hover\/30:hover,
+[data-theme="light"] .hover\:bg-card-hover\/20:hover {
+  background-color: #f0f0f0 !important;
+}
+
+[data-theme="light"] .hover\:bg-sidebar-hover:hover {
+  background-color: #f0f0f0 !important;
+}
+
+[data-theme="light"] .hover\:bg-accent\/5:hover,
+[data-theme="light"] .hover\:bg-accent\/10:hover,
+[data-theme="light"] .hover\:bg-accent\/15:hover {
+  background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+/* Accent muted backgrounds */
+[data-theme="light"] .bg-accent-muted {
+  background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+[data-theme="light"] .bg-accent\/5 {
+  background-color: rgba(99, 102, 241, 0.03) !important;
+}
+
+[data-theme="light"] .bg-accent\/10 {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+[data-theme="light"] .bg-accent\/15 {
+  background-color: rgba(99, 102, 241, 0.06) !important;
+}
+
+/* Status badge backgrounds - unified light tint */
+[data-theme="light"] .bg-success\/15 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+[data-theme="light"] .bg-success\/20 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="light"] .bg-warning\/15,
+[data-theme="light"] .bg-warning\/20 {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+[data-theme="light"] .bg-danger\/10,
+[data-theme="light"] .bg-danger\/15 {
+  background-color: rgba(239, 68, 68, 0.06) !important;
+}
+
+[data-theme="light"] .bg-info\/15 {
+  background-color: rgba(6, 182, 212, 0.08) !important;
+}
+
+[data-theme="light"] .bg-muted\/20,
+[data-theme="light"] .bg-muted\/30,
+[data-theme="light"] .bg-muted\/40 {
+  background-color: rgba(163, 163, 163, 0.1) !important;
+}
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* Form elements */
+[data-theme="light"] select option {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="time"] {
+  color-scheme: light;
+}
+
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* Shadows - light mode uses visible shadows */
+[data-theme="light"] .shadow-lg { box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .shadow-xl { box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .shadow-2xl { box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important; }
+
+/* Backdrop */
+[data-theme="light"] .bg-background\/80 {
+  background: rgba(245, 245, 245, 0.9) !important;
+}
+
+/* Modal overlay */
+[data-theme="light"] .bg-black\/60 {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Charts */
+[data-theme="light"] .recharts-cartesian-grid line { stroke: #e5e5e5 !important; }
+[data-theme="light"] .recharts-text { fill: #737373 !important; }
+
+/* ContentEditable */
+[data-theme="light"] [contenteditable] {
+  background: #ffffff !important;
+  border-color: #e5e5e5 !important;
+  color: #1a1a1a !important;
+}
+
+/* Table borders in reports */
+[data-theme="light"] td,
+[data-theme="light"] th {
+  border-color: #e5e5e5 !important;
+}
+
+[data-theme="light"] th {
+  background-color: #f5f5f5 !important;
+}
+
+/* ── Unified progress bar track: #e5e5e5 ── */
+[data-theme="light"] .bg-border {
+  background-color: #e5e5e5 !important;
+}
+
+/* Range slider track */
+[data-theme="light"] input[type="range"]::-webkit-slider-runnable-track {
+  background: #e5e5e5;
+}
+
+/* Hover border unified */
+[data-theme="light"] .hover\:border-border-hover:hover {
+  border-color: #d4d4d4 !important;
+}
+
+[data-theme="light"] .hover\:border-accent\/40:hover,
+[data-theme="light"] .hover\:border-accent\/50:hover {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Focus border */
+[data-theme="light"] .focus\:border-accent:focus {
+  border-color: #6366f1 !important;
+}
+
+/* Custom select dropdown */
+[data-theme="light"] .fixed.z-\[200\] {
+  background: #ffffff !important;
+  border-color: #e5e5e5 !important;
+}
+
+/* Notification dropdown */
+[data-theme="light"] .absolute.z-50.bg-card {
+  background: #ffffff !important;
+}
+
+/* Kanban column bg */
+[data-theme="light"] .bg-card\/50 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Tab active state - keep white text on accent */
+[data-theme="light"] .bg-accent.text-white {
+  color: #ffffff !important;
+}
+
+/* Status dots should keep their colors */
+[data-theme="light"] .bg-success { background-color: #10b981 !important; }
+[data-theme="light"] .bg-danger { background-color: #ef4444 !important; }
+[data-theme="light"] .bg-warning { background-color: #f59e0b !important; }
+[data-theme="light"] .bg-info { background-color: #06b6d4 !important; }
+
+/* Landing page specific */
+[data-theme="light"] .bg-accent\/8 { background-color: rgba(99, 102, 241, 0.04) !important; }
+
+/* Text colors that should stay readable */
+[data-theme="light"] .text-foreground { color: #1a1a1a !important; }
+[data-theme="light"] .text-muted-foreground { color: #737373 !important; }
+[data-theme="light"] .text-muted { color: #a3a3a3 !important; }
+
+/* Toast in light mode */
+[data-theme="light"] .bg-card.border-success\/30,
+[data-theme="light"] .bg-card.border-danger\/30,
+[data-theme="light"] .bg-card.border-warning\/30 {
+  background: #ffffff !important;
+}
+
+/* ─── Base Styles ────────────────────────────────────────── */
+
+html {
+  font-size: 16px;
+  overflow-y: scroll;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.glass {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gradient-border {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.gradient-border:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Form elements border-radius */
+select, input, textarea {
+  border-radius: 12px;
+}
+
+/* Select option */
+select option {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 0;
+}
+
+/* Date/time input */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+/* Clickable elements */
+button, [role="button"], a, label[class*="cursor"], select {
+  cursor: pointer;
+}
+
+/* ─── Mammoth-imported list bullet de-duplication ──────────────
+ * Mammoth wraps deep-level docx items in a hollow <ul><li><ul>...</ul></li></ul>
+ * envelope when Word's list is interrupted by a non-list paragraph.  The empty
+ * outer <li> would render a duplicate bullet (●).  `normalizeListDepth` (in
+ * reports/new/page.tsx) tags those wrappers with `data-empty-wrapper="true"`
+ * at docx-import time; we hide ONLY those.
+ *
+ * NOTE: An earlier draft used `li:has(> ul:only-child)`.  That over-matched —
+ * CSS `:only-child` ignores text-node siblings, so a real `<li>text<ul>…</ul></li>`
+ * (text + nested list, e.g. from execCommand("indent")) was also hit, killing
+ * its ● bullet and its margin/padding.  Restricting to the explicit attribute
+ * fixes both the missing-bullet and inconsistent-height regressions. */
+li[data-empty-wrapper="true"] {
+  list-style: none !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* split wrapper 안의 nested ul 은 mt-1 (Tailwind [&_ul_ul]:mt-1) 도 제거해서
+ * 시각적으로 완전히 투명하게 만든다 — 안의 항목이 wrapper 가 있던 자리에
+ * 정확히 동일한 위치로 나타나도록.  사용자가 "묶여서 이동" 으로 인식하던 문제 해결. */
+li[data-empty-wrapper="true"] > ul,
+li[data-empty-wrapper="true"] > ol {
+  margin-top: 0 !important;
+}
+
+/* 빈 셀 placeholder — 셀 전체 영역을 차지해서 클릭이 placeholder 에 안 떨어져
+ * 인접 셀로 cursor 가 빠지는 문제 방지.  data-cell-placeholder 속성으로 표시된
+ * <p> 만 대상: 셀 padding 을 음수 마진으로 상쇄하고 본인이 같은 padding 을 가짐. */
+[contenteditable] td > p[data-cell-placeholder="true"],
+[contenteditable] th > p[data-cell-placeholder="true"] {
+  display: block;
+  margin: -0.75rem -1rem !important;
+  padding: 0.75rem 1rem !important;
+  min-height: 1.5em;
+  cursor: text;
+}
+
+/* ─── 단계별 글머리표 (1단계=1., 2단계=가., 3단계=●, 4단계=-) ───
+ * 표준 list-style-type 의 hangul/hangul-dot/string 등이 일부 환경에서 동작이
+ * 불안정하므로, list-style 을 끄고 ::marker content 로 직접 그린다.
+ * 한글 자모는 자체 @counter-style 로 정의 (system: alphabetic — 14자 자모,
+ * 15번째부터 "가가" 식 자동 확장). */
+@counter-style hangul-alphabet {
+  system: alphabetic;
+  symbols: "가" "나" "다" "라" "마" "바" "사" "아" "자" "차" "카" "타" "파" "하";
+  suffix: ". ";
+}
+
+.report-prose ul {
+  list-style: none;
+  counter-reset: lvl;
+  /* 최상위(1단계) ul 은 들여쓰기 0 — 컨테이너 왼쪽 끝에서 시작. */
+  padding-left: 0;
+}
+/* nested ul (2단계 이하) 에만 0.25rem 씩 들여쓰기 — li > ul 이라 specificity 가
+ * 높아 최상위 규칙을 이김.  단계마다 자동 누적되어 2단계 0.25 / 3단계 0.5 / 4단계 0.75rem. */
+.report-prose li > ul {
+  padding-left: 0.25rem;
+}
+.report-prose ul > li {
+  counter-increment: lvl;
+  position: relative;
+  /* 모든 단계 동일한 li padding 으로 텍스트 시작점 정렬 — 한글 "가." 가 가장 폭이
+   * 넓으므로 그것에 맞춰 1.75em.  marker 는 ::before absolute 로 이 padding 영역
+   * 안에 그려져 텍스트와 안 겹친다.  단계별 들여쓰기는 ul padding-left (0.25rem)
+   * 누적으로만 결정 → 단계마다 정확히 0.25rem 차이. */
+  padding-left: 1.75em;
+}
+.report-prose ul > li::before {
+  content: counter(lvl) ". ";
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+
+.report-prose ul ul > li::before {
+  content: counter(lvl, hangul-alphabet) ". ";
+}
+
+.report-prose ul ul ul > li::before {
+  /* 첨부 이미지의 작은 ● — Unicode "BULLET" (U+2022) 사용.
+   * "BLACK CIRCLE" (U+25CF) 는 너무 큰 ● 라 docx 표준 글머리표 크기와 안 맞음. */
+  content: "\2022";
+}
+
+.report-prose ul ul ul ul > li::before {
+  content: "-";
+}
+
+/* 빈 wrapper li (data-empty-wrapper) — indent 시 생긴 상위 자리 / outdent split wrapper.
+ * 카운터 제외 + 마커 안 그림.  단, 마커는 없어도 일반 li 와 같은 마커 자리(1.75em)를
+ * 차지하게 해, 그 안의 하위 단계가 "상위 li(마커 있음) 아래 만든 단계"와 동일한 위치에
+ * 정렬되도록 한다.  (예전엔 padding 0 이라, 줄바꿈 없이/상위 li 없이 만든 단계가 1.75em
+ * 덜 들여써져 같은 단계인데도 위치가 어긋났다.  data-indent-wrapper 속성 유무와 무관하게
+ * 모든 빈 wrapper 에 적용해 기존 데이터도 함께 보정된다.) */
+.report-prose li[data-empty-wrapper="true"] {
+  counter-increment: none;
+  padding-left: 1.75em !important;
+}
+.report-prose li[data-empty-wrapper="true"]::before {
+  content: "" !important;
+}
