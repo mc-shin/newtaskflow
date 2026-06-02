@@ -9,7 +9,7 @@ import type { Report } from "@/lib/types";
 export default function LastWeekButton({ report }: { report: Report | null }) {
   const open = () => {
     if (!report) {
-      toast("info", "보관된 지난주 보고서가 없습니다. '주간보고 리스트'에서 먼저 업로드하세요.");
+      toast("warning", "보관된 지난주 보고서가 없습니다. '주간보고 리스트'에서 먼저 업로드하세요.");
       return;
     }
     // 주간보고 표 형태가 유지되는 최소 크기로 새 창을 연다(화면보다 크면 화면에 맞춰 축소됨).
