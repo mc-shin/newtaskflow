@@ -2518,8 +2518,11 @@ export default function ReportDetailPage() {
     let cancelled = false;
     setInitialLoaded(false);
     (async () => {
-      await refreshReport(reportId);
-      if (workspaceId) await refreshWorkspaceMembers(workspaceId);
+      // 두 호출을 병렬로(순차 대기의 절반).  캐시가 있으면 화면은 이미 떠 있고 이건 백그라운드 갱신이다.
+      await Promise.all([
+        refreshReport(reportId),
+        workspaceId ? refreshWorkspaceMembers(workspaceId) : Promise.resolve(),
+      ]);
       if (!cancelled) setInitialLoaded(true);
     })();
     return () => { cancelled = true; };
@@ -2537,11 +2540,10 @@ export default function ReportDetailPage() {
 
   const report = reports.find((r) => r.id === reportId);
 
-  // 백엔드에서 최신 데이터(제출 포함)를 받아오기 전에는 항상 로딩 표시 — persist 에
-  // report 가 있어도 submissions 가 누락/오래된 경우, 자식의 draft useState 가 빈 값으로
-  // 굳어 제출본이 사라진 것처럼 보인다.  initialLoaded 후 자식을 처음 마운트해서 draft
-  // 초기화 시점에 최신 submissions 가 존재하도록 보장한다.
-  if (!initialLoaded) {
+  // 캐시(store)에 보고서가 이미 있으면 로딩 화면 없이 즉시 렌더하고, 최신 데이터는
+  // 백그라운드(refreshReport)로 갱신한다.  목록에서 들어온 경우 store 에 최신 내용·제출본이
+  // 이미 있어 즉시 표시해도 정확하다.  store 에 아예 없을 때(콜드 진입)만 잠깐 로딩을 보여준다.
+  if (!initialLoaded && !report) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
