@@ -2,7 +2,10 @@
  * Backend API client. Reads token from localStorage ('wf_token').
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// 기본값은 상대경로("") → 브라우저가 같은 출처(/api/*)로 호출하면 next.config 의 rewrites 가
+// 백엔드로 프록시한다(HTTPS 프론트 ↔ HTTP 백엔드 mixed content 회피).
+// NEXT_PUBLIC_API_URL 을 설정하면 그 주소로 직접 호출하지만, 운영에선 비워둔다.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 const TOKEN_KEY = "wf_token";
 
