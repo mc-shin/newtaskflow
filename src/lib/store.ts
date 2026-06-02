@@ -107,8 +107,8 @@ interface AppState {
   addTaskAttachment: (taskId: string, attachment: import("./types").TaskAttachment) => void;
 
   // Workspace
-  deleteWorkspace: (wsId: string) => void;
-  leaveWorkspaceMember: (wsId: string, userId: string) => void;
+  deleteWorkspace: (wsId: string) => Promise<boolean>;
+  leaveWorkspaceMember: (wsId: string, userId: string) => Promise<boolean>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -574,16 +574,33 @@ export const useAppStore = create<AppState>()(
           tasks: s.tasks.map((t) => t.id === taskId ? { ...t, attachments: [...(t.attachments || []), attachment] } : t),
         })),
 
-      deleteWorkspace: (wsId) =>
+      deleteWorkspace: async (wsId) => {
+        try {
+          await api.workspaces.delete(wsId);   // 서버(Neon)에서 실제 삭제 — cascade 로 멤버/보고서/제출 함께 삭제
+        } catch (e) {
+          console.error("deleteWorkspace failed", e);
+          return false;
+        }
         set((s) => ({
           workspaces: s.workspaces.filter((w) => w.id !== wsId),
           currentWorkspaceId: s.currentWorkspaceId === wsId ? null : s.currentWorkspaceId,
-        })),
-      leaveWorkspaceMember: (wsId, userId) =>
+        }));
+        return true;
+      },
+      leaveWorkspaceMember: async (wsId, userId) => {
+        try {
+          await api.workspaces.removeMember(wsId, userId);  // 서버에서 멤버십 제거
+        } catch (e) {
+          console.error("leaveWorkspaceMember failed", e);
+          return false;
+        }
+        // 현재 사용자가 나갔으므로 목록에서도 제거(더 이상 멤버가 아님).
         set((s) => ({
-          workspaces: s.workspaces.map((w) => w.id === wsId ? { ...w, members: w.members.filter((m) => m !== userId) } : w),
+          workspaces: s.workspaces.filter((w) => w.id !== wsId),
           currentWorkspaceId: s.currentWorkspaceId === wsId ? null : s.currentWorkspaceId,
-        })),
+        }));
+        return true;
+      },
     }),
     {
       name: "project-flow-store",

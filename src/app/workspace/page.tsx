@@ -276,10 +276,11 @@ export default function WorkspacePage() {
               {editWs && currentUser && editWs.ownerId === currentUser.id ? (
                 <FormButton
                   variant="danger"
-                  onClick={() => {
+                  onClick={async () => {
                     if (!editWs) return;
                     if (window.confirm("정말로 이 워크스페이스를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-                      deleteWorkspace(editWs.id);
+                      const ok = await deleteWorkspace(editWs.id);
+                      if (!ok) { toast("error", "삭제에 실패했습니다. 권한 또는 연결을 확인해주세요."); return; }
                       setEditWs(null);
                       toast("success", "워크스페이스가 삭제되었습니다");
                       router.push("/workspace");
@@ -291,10 +292,11 @@ export default function WorkspacePage() {
               ) : editWs && currentUser ? (
                 <FormButton
                   variant="danger"
-                  onClick={() => {
+                  onClick={async () => {
                     if (!editWs || !currentUser) return;
                     if (window.confirm("정말로 이 워크스페이스를 나가시겠습니까?")) {
-                      leaveWorkspaceMember(editWs.id, currentUser.id);
+                      const ok = await leaveWorkspaceMember(editWs.id, currentUser.id);
+                      if (!ok) { toast("error", "나가기에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
                       setEditWs(null);
                       toast("success", "워크스페이스를 나갔습니다");
                       router.push("/workspace");
