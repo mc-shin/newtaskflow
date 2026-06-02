@@ -34,9 +34,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         }));
         useAppStore.getState().hydrateFromServer();
       })
-      .catch(() => {
-        // token invalid
-        useAppStore.getState().logout();
+      .catch((e: any) => {
+        // 토큰이 실제로 무효(401)일 때만 로그아웃한다.
+        // 502·500·네트워크 등 일시적 오류는 세션을 유지하고(로컬 상태가 이미 복원됨) 데이터만 재시도.
+        if (e?.status === 401) {
+          useAppStore.getState().logout();
+        } else {
+          useAppStore.getState().hydrateFromServer();
+        }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);

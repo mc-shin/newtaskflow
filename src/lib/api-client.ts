@@ -37,7 +37,15 @@ async function call<T = any>(path: string, init: FetchInit = {}): Promise<T> {
     body: init.body == null ? undefined : typeof init.body === "string" ? init.body : JSON.stringify(init.body),
   });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: any = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // 비(非)JSON 응답(예: Vercel 프록시 502 에러 페이지) — 텍스트를 에러 메시지로 보존하고 status 로 구분
+      data = { error: text.slice(0, 200) };
+    }
+  }
   if (!res.ok) {
     const err: Error & { status?: number; data?: unknown } = new Error(data?.error || `HTTP ${res.status}`);
     err.status = res.status;
