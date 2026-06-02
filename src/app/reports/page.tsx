@@ -17,7 +17,7 @@ const TAB_LABELS: { key: FilterTab; label: string }[] = [
 
 export default function ReportsPage() {
   const router = useRouter();
-  const { reports, users, projects, currentUser } = useWorkspaceData();
+  const { reports, users, projects, currentUser, wsDataLoading } = useWorkspaceData();
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
 
   const isAdminOrManager = currentUser?.role === "admin" || currentUser?.role === "final_manager" || currentUser?.role === "mid_manager";
@@ -99,7 +99,9 @@ export default function ReportsPage() {
           </div>
           <div className="divide-y divide-border">
             {filteredReports.length === 0 && (
-              <p className="text-muted-foreground text-[14px] py-12 text-center">보고서가 없습니다</p>
+              <p className="text-muted-foreground text-[14px] py-12 text-center">
+                {wsDataLoading ? "불러오는 중…" : "보고서가 없습니다"}
+              </p>
             )}
             {filteredReports.map((report) => {
               const author = users.find((u) => u.id === report.authorId);

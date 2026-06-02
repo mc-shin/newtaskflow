@@ -13,6 +13,7 @@ const reports: Report[] = [];
 
 interface AppState {
   _hydrated: boolean;
+  wsDataLoading: boolean; // 워크스페이스 데이터(멤버·보고서) 로딩 중 여부 — "로딩"과 "빈 상태" 구분용
   currentUser: User | null;
   isAuthenticated: boolean;
   sidebarOpen: boolean;
@@ -114,6 +115,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       _hydrated: false,
+      wsDataLoading: false,
       currentUser: null,
       isAuthenticated: false,
       sidebarOpen: true,
@@ -415,6 +417,7 @@ export const useAppStore = create<AppState>()(
         void get().selectWorkspaceAsync(id);
       },
       selectWorkspaceAsync: async (id: string) => {
+        set({ wsDataLoading: true });
         try {
           const { workspace } = await api.workspaces.get(id);
           const mappedUsers: User[] = workspace.members.map((m) => ({
@@ -436,6 +439,8 @@ export const useAppStore = create<AppState>()(
           await get().refreshReports(id);
         } catch (e) {
           console.error("selectWorkspaceAsync failed", e);
+        } finally {
+          set({ wsDataLoading: false });
         }
       },
       leaveWorkspace: () => set((s) => ({
