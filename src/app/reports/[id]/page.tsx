@@ -685,6 +685,29 @@ function extractTopLevelTcs(xml: string): string[] {
   return cells;
 }
 
+// document.xml 의 "최상위 표" 행(<w:tr>)만 balanced 추출한다 (중첩 표의 행은 제외).  w:tbl 깊이를 추적.
+function extractTopLevelTrs(xml: string): { str: string; start: number; end: number }[] {
+  const rows: { str: string; start: number; end: number }[] = [];
+  const re = /<w:tbl(?:\s[^>]*)?>|<\/w:tbl>|<w:tr(?:\s[^>]*)?>|<\/w:tr>/g;
+  let tblDepth = 0;
+  let trStart = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml))) {
+    const tag = m[0];
+    if (tag.startsWith("<w:tbl")) tblDepth++;
+    else if (tag.startsWith("</w:tbl")) tblDepth--;
+    else if (tag.startsWith("</w:tr")) {
+      if (tblDepth === 1 && trStart >= 0) {
+        rows.push({ str: xml.slice(trStart, m.index + tag.length), start: trStart, end: m.index + tag.length });
+        trStart = -1;
+      }
+    } else if (tblDepth === 1 && trStart < 0) {
+      trStart = m.index;
+    }
+  }
+  return rows;
+}
+
 // HTML 셀 내용으로 <w:tc> 안의 모든 <w:p> 를 완전 재빌드한다.
 // 원본 docx 의 <w:pPr>/<w:rPr> 을 깊이별 템플릿으로 보존해서 스타일/들여쓰기/폰트가 유지된다.
 // 텍스트 단순 매칭 방식 대비, 사용자가 항목을 추가/삭제/재배치해도 UI 와 정확히 일치하는 결과가 나온다.
@@ -874,6 +897,34 @@ async function exportToDoc(report: Report, authorName: string, projectName: stri
         }
         return true;
       });
+
+      // ── 여분 행 제거: html(에디터)에 대응되지 않는 원본 템플릿의 "남는 행"을 다운로드에서 삭제 ──
+      // html 셀 수만큼만 채워지고 나머지 원본 행이 빈 채로 다운로드에 붙던 문제(템플릿 행 패딩)를 수정.
+      // 안전: 같은 표 안에서 "연속된 완전한 <w:tr>" 만 잘라내 docx 손상을 방지. 이상 시 그대로 둠.
+      try {
+        const topRows = extractTopLevelTrs(xml);
+        let accNonV = 0;     // 누적 (vMerge 제외) 셀 수
+        let cutIdx = -1;     // 이 행부터가 여분 행
+        for (let ri = 0; ri < topRows.length; ri++) {
+          const rowNonV = extractTopLevelTcs(topRows[ri].str).filter((c) => !/<w:vMerge\/>/.test(c)).length;
+          if (rowNonV === 0) continue;
+          if (accNonV >= htmlCells.length) { cutIdx = ri; break; }
+          accNonV += rowNonV;
+        }
+        if (cutIdx >= 0) {
+          // 행 사이에 비공백(</w:tbl> 등)이 나오면 표 경계 → 거기까지만 제거
+          let endIdx = topRows.length - 1;
+          for (let ri = cutIdx; ri < topRows.length - 1; ri++) {
+            if (xml.slice(topRows[ri].end, topRows[ri + 1].start).trim() !== "") { endIdx = ri; break; }
+          }
+          const cutStart = topRows[cutIdx].start;
+          const cutEnd = topRows[endIdx].end;
+          const removed = xml.slice(cutStart, cutEnd);
+          if (/^\s*(?:<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>\s*)+$/.test(removed)) {
+            xml = xml.slice(0, cutStart) + xml.slice(cutEnd);
+          }
+        }
+      } catch (e) { console.error("trailing-row trim skipped", e); }
 
       // 최상위 <w:tc> 만 balanced 추출 (중첩 테이블 셀의 정규식 절단 방지).
       const xmlCells = extractTopLevelTcs(xml);
