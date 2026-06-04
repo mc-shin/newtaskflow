@@ -708,6 +708,48 @@ function extractTopLevelTrs(xml: string): { str: string; start: number; end: num
   return rows;
 }
 
+// 런(<w:r>)의 글자 크기/굵기를 강제한다.  rPr 유무·self-closing 모두 안전 처리(텍스트 런만).
+function setRunFmt(frag: string, halfPt: number, bold: boolean): string {
+  return frag.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (run) => {
+    if (!/<w:t[^>]*>/.test(run)) return run; // 이미지/드로잉 런 제외
+    const szTags = `<w:sz w:val="${halfPt}"/><w:szCs w:val="${halfPt}"/>`;
+    if (/<w:rPr\s*\/>/.test(run)) {
+      return run.replace(/<w:rPr\s*\/>/, `<w:rPr>${bold ? "<w:b/>" : ""}${szTags}</w:rPr>`);
+    }
+    if (/<w:rPr>[\s\S]*?<\/w:rPr>/.test(run)) {
+      return run.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/, (_m, inner) => {
+        let i = inner.replace(/<w:sz\s+w:val="\d+"\s*\/>/g, "").replace(/<w:szCs\s+w:val="\d+"\s*\/>/g, "");
+        if (bold && !/<w:b\s*\/>/.test(i)) i = "<w:b/>" + i;
+        return `<w:rPr>${i}${szTags}</w:rPr>`;
+      });
+    }
+    return run.replace(/^(<w:r(?:\s[^>]*)?>)/, `$1<w:rPr>${bold ? "<w:b/>" : ""}${szTags}</w:rPr>`);
+  });
+}
+
+// 헤더 서식 강제: 타이틀(…Weekly Report) 칸 → 20pt bold, 작성자/보고일 행의 칸 → 12pt.
+// 편집/재빌드로 서식이 빠져도 다운로드본에서 항상 보장한다.  본문 표는 건드리지 않음.
+function enforceHeaderSizes(xml: string): string {
+  const textOf = (s: string) => (s.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || []).map((t) => t.match(/>([^<]*)</)?.[1] || "").join("");
+  let out = xml;
+  for (const row of extractTopLevelTrs(xml)) {
+    const rowText = textOf(row.str);
+    const isInfo = /작성자|보고일/.test(rowText);
+    const hasTitle = /Weekly\s*Report/i.test(rowText);
+    if (!isInfo && !hasTitle) continue;
+    let newRow = row.str;
+    for (const cell of extractTopLevelTcs(row.str)) {
+      const ct = textOf(cell);
+      let nc = cell;
+      if (/Weekly\s*Report/i.test(ct)) nc = setRunFmt(cell, 40, true);        // 타이틀 20pt bold
+      else if (isInfo && ct.trim() !== "") nc = setRunFmt(cell, 24, false);   // 작성자/보고일 12pt
+      if (nc !== cell) newRow = newRow.replace(cell, nc);
+    }
+    if (newRow !== row.str) out = out.replace(row.str, newRow);
+  }
+  return out;
+}
+
 // HTML 셀 내용으로 <w:tc> 안의 모든 <w:p> 를 완전 재빌드한다.
 // 원본 docx 의 <w:pPr>/<w:rPr> 을 깊이별 템플릿으로 보존해서 스타일/들여쓰기/폰트가 유지된다.
 // 텍스트 단순 매칭 방식 대비, 사용자가 항목을 추가/삭제/재배치해도 UI 와 정확히 일치하는 결과가 나온다.
@@ -984,6 +1026,9 @@ async function exportToDoc(report: Report, authorName: string, projectName: stri
           nextNumId++;
         }
       }
+
+      // 헤더 서식 강제(타이틀 20pt bold / 작성자·보고일 12pt) — 편집·재빌드로 서식이 빠져도 보장.
+      xml = enforceHeaderSizes(xml);
 
       zip.file("word/document.xml", xml);
 
