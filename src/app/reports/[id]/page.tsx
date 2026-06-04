@@ -731,21 +731,26 @@ function setRunFmt(frag: string, halfPt: number, bold: boolean): string {
 // 편집/재빌드로 서식이 빠져도 다운로드본에서 항상 보장한다.  본문 표는 건드리지 않음.
 function enforceHeaderSizes(xml: string): string {
   const textOf = (s: string) => (s.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || []).map((t) => t.match(/>([^<]*)</)?.[1] || "").join("");
+  const rows = extractTopLevelTrs(xml);
   let out = xml;
-  for (const row of extractTopLevelTrs(xml)) {
-    const rowText = textOf(row.str);
+  for (let ri = 0; ri < rows.length; ri++) {
+    const rowText = textOf(rows[ri].str);
     const isInfo = /작성자|보고일/.test(rowText);
     const hasTitle = /Weekly\s*Report/i.test(rowText);
-    if (!isInfo && !hasTitle) continue;
-    let newRow = row.str;
-    for (const cell of extractTopLevelTcs(row.str)) {
+    // 본문 표의 "프로젝트/실적/계획/비고" 열 머리행 + 바로 아래 날짜 범위 행
+    const isColHdr = /실적/.test(rowText) && /계획/.test(rowText);
+    const prevIsColHdr = ri > 0 && /실적/.test(textOf(rows[ri - 1].str)) && /계획/.test(textOf(rows[ri - 1].str));
+    if (!isInfo && !hasTitle && !isColHdr && !prevIsColHdr) continue;
+    let newRow = rows[ri].str;
+    for (const cell of extractTopLevelTcs(rows[ri].str)) {
       const ct = textOf(cell);
       let nc = cell;
-      if (/Weekly\s*Report/i.test(ct)) nc = setRunFmt(cell, 40, true);        // 타이틀 20pt bold
-      else if (isInfo && ct.trim() !== "") nc = setRunFmt(cell, 24, false);   // 작성자/보고일 12pt
+      if (/Weekly\s*Report/i.test(ct)) nc = setRunFmt(cell, 40, true);                          // 타이틀 20pt bold
+      else if (isInfo && ct.trim() !== "") nc = setRunFmt(cell, 24, false);                     // 작성자/보고일 12pt
+      else if ((isColHdr || prevIsColHdr) && ct.trim() !== "") nc = setRunFmt(cell, 24, true);  // 실적/계획 머리행 + 날짜행 12pt bold
       if (nc !== cell) newRow = newRow.replace(cell, nc);
     }
-    if (newRow !== row.str) out = out.replace(row.str, newRow);
+    if (newRow !== rows[ri].str) out = out.replace(rows[ri].str, newRow);
   }
   return out;
 }
