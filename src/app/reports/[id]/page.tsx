@@ -746,6 +746,11 @@ function unboldRuns(frag: string): string {
   });
 }
 
+// 셀의 세로 정렬을 상단(top)으로 바꾼다 (vAlign=center/bottom → top).  vAlign 이 없으면 기본이 top 이므로 그대로 둠.
+function setCellVAlignTop(cell: string): string {
+  return cell.replace(/<w:vAlign\s+w:val="[^"]*"\s*\/>/, '<w:vAlign w:val="top"/>');
+}
+
 // 헤더 서식 강제: 타이틀(…Weekly Report) 칸 → 20pt bold, 작성자/보고일 행의 칸 → 12pt.
 // 편집/재빌드로 서식이 빠져도 다운로드본에서 항상 보장한다.  본문 표는 건드리지 않음.
 function enforceHeaderSizes(xml: string): string {
@@ -773,6 +778,7 @@ function enforceHeaderSizes(xml: string): string {
       else if (isInfo && ct.trim() !== "") nc = setRunFmt(cell, 24, false);                     // 작성자/보고일 12pt
       else if ((isColHdr || prevIsColHdr) && ct.trim() !== "") nc = setRunFmt(cell, 24, true);  // 실적/계획 머리행 + 날짜행 12pt bold
       else if (isBodyRow && ci === 0 && ct.trim() !== "") nc = unboldRuns(cell);                // 프로젝트 제목(첫 칼럼) bold 제거
+      else if (isBodyRow && ci >= 1) nc = setCellVAlignTop(cell);                                // 본문 내용칸 → 세로 상단 정렬
       if (nc !== cell) newRow = newRow.replace(cell, nc);
     }
     if (newRow !== rows[ri].str) out = out.replace(rows[ri].str, newRow);
