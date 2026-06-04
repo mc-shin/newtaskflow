@@ -1565,19 +1565,6 @@ function AdminAggregationView({
                 {existing ? `내 ${stageLabel[myStage]} 보고서 수정` : `내 ${stageLabel[myStage]} 보고서 제출`}
               </FormButton>
             )}
-            {canDistributeOrClose && !isClosed && (
-              <FormButton
-                onClick={async () => {
-                  await handleSubmitDraft();
-                  onAggregate();
-                  onClose();
-                }}
-                disabled={submitting}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {hasMidManagers ? "취합 완료" : "최종 취합 + 마감"}
-              </FormButton>
-            )}
           </div>
         </div>
       </div>
