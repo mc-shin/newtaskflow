@@ -727,11 +727,31 @@ function setRunFmt(frag: string, halfPt: number, bold: boolean): string {
   });
 }
 
+// 런의 bold 를 명시적으로 끈다(<w:b w:val="0"/>).  스타일·inline bold 모두 무력화하고 크기는 유지.
+function unboldRuns(frag: string): string {
+  const off = '<w:b w:val="0"/>';
+  return frag.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (run) => {
+    if (!/<w:t[^>]*>/.test(run)) return run;
+    if (/<w:rPr\s*\/>/.test(run)) return run.replace(/<w:rPr\s*\/>/, `<w:rPr>${off}</w:rPr>`);
+    if (/<w:rPr>[\s\S]*?<\/w:rPr>/.test(run)) {
+      return run.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/, (_m, inner) => {
+        let i = inner.replace(/<w:b\s*\/>/g, "").replace(/<w:b\s+w:val="[^"]*"\/>/g, "");
+        if (/<w:rFonts(?:\s[^>]*)?\/>/.test(i)) i = i.replace(/(<w:rFonts(?:\s[^>]*)?\/>)/, `$1${off}`);
+        else if (/<w:rStyle(?:\s[^>]*)?\/>/.test(i)) i = i.replace(/(<w:rStyle(?:\s[^>]*)?\/>)/, `$1${off}`);
+        else i = off + i;
+        return `<w:rPr>${i}</w:rPr>`;
+      });
+    }
+    return run.replace(/^(<w:r(?:\s[^>]*)?>)/, `$1<w:rPr>${off}</w:rPr>`);
+  });
+}
+
 // 헤더 서식 강제: 타이틀(…Weekly Report) 칸 → 20pt bold, 작성자/보고일 행의 칸 → 12pt.
 // 편집/재빌드로 서식이 빠져도 다운로드본에서 항상 보장한다.  본문 표는 건드리지 않음.
 function enforceHeaderSizes(xml: string): string {
   const textOf = (s: string) => (s.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || []).map((t) => t.match(/>([^<]*)</)?.[1] || "").join("");
   const rows = extractTopLevelTrs(xml);
+  const colHdrIdx = rows.findIndex((r) => /실적/.test(textOf(r.str)) && /계획/.test(textOf(r.str)));
   let out = xml;
   for (let ri = 0; ri < rows.length; ri++) {
     const rowText = textOf(rows[ri].str);
@@ -740,14 +760,19 @@ function enforceHeaderSizes(xml: string): string {
     // 본문 표의 "프로젝트/실적/계획/비고" 열 머리행 + 바로 아래 날짜 범위 행
     const isColHdr = /실적/.test(rowText) && /계획/.test(rowText);
     const prevIsColHdr = ri > 0 && /실적/.test(textOf(rows[ri - 1].str)) && /계획/.test(textOf(rows[ri - 1].str));
-    if (!isInfo && !hasTitle && !isColHdr && !prevIsColHdr) continue;
+    // 본문 프로젝트 행(머리행+날짜행 이후) — 첫 칼럼(프로젝트 제목)의 bold 제거 대상
+    const isBodyRow = colHdrIdx >= 0 && ri >= colHdrIdx + 2;
+    if (!isInfo && !hasTitle && !isColHdr && !prevIsColHdr && !isBodyRow) continue;
+    const cells = extractTopLevelTcs(rows[ri].str);
     let newRow = rows[ri].str;
-    for (const cell of extractTopLevelTcs(rows[ri].str)) {
+    for (let ci = 0; ci < cells.length; ci++) {
+      const cell = cells[ci];
       const ct = textOf(cell);
       let nc = cell;
       if (/Weekly\s*Report/i.test(ct)) nc = setRunFmt(cell, 40, true);                          // 타이틀 20pt bold
       else if (isInfo && ct.trim() !== "") nc = setRunFmt(cell, 24, false);                     // 작성자/보고일 12pt
       else if ((isColHdr || prevIsColHdr) && ct.trim() !== "") nc = setRunFmt(cell, 24, true);  // 실적/계획 머리행 + 날짜행 12pt bold
+      else if (isBodyRow && ci === 0 && ct.trim() !== "") nc = unboldRuns(cell);                // 프로젝트 제목(첫 칼럼) bold 제거
       if (nc !== cell) newRow = newRow.replace(cell, nc);
     }
     if (newRow !== rows[ri].str) out = out.replace(rows[ri].str, newRow);
