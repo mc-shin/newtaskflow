@@ -2850,18 +2850,6 @@ export default function ReportDetailPage() {
           <button onClick={() => router.push("/reports")} className="p-2.5 rounded-xl hover:bg-accent/15 hover:text-accent transition-all" title="목록으로">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <button
-            onClick={async () => {
-              await refreshReport(reportId);
-              if (workspaceId) await refreshWorkspaceMembers(workspaceId);
-              toast("success", "최신 제출본을 가져왔습니다.");
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-[13px] font-medium"
-            title="다른 사람의 새 제출본을 가져옵니다"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            새 제출 가져오기
-          </button>
           {canDistributeOrClose && (
             <button onClick={handleDelete} className="p-2.5 rounded-xl hover:bg-danger/15 transition-colors" title="삭제">
               <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
