@@ -1562,7 +1562,7 @@ function AdminAggregationView({
             {!isClosed && (
               <FormButton onClick={handleSubmitDraft} disabled={submitting}>
                 <Send className="w-4 h-4" />
-                {existing ? `내 ${stageLabel[myStage]} 보고서 수정` : `내 ${stageLabel[myStage]} 보고서 제출`}
+                {existing ? `내 ${stageLabel[myStage]} 보고서 수정` : `내 ${stageLabel[myStage]} 보고서 저장`}
               </FormButton>
             )}
           </div>
