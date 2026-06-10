@@ -6,12 +6,13 @@ import ReportHtmlViewer from "@/components/ReportHtmlViewer";
 import { useWorkspaceData } from "@/lib/useWorkspaceData";
 import { importDocxToContent } from "@/lib/docx-import";
 import { serializeContent, parseContent, isArchiveReport, reportDate } from "@/lib/report-utils";
+import { exportToDoc } from "@/lib/docx-export";
 import { toast } from "@/components/Toast";
 import type { Report } from "@/lib/types";
-import { Upload, FileText, Trash2, Calendar, ArrowLeft } from "lucide-react";
+import { Upload, FileText, Trash2, Calendar, ArrowLeft, Download } from "lucide-react";
 
 export default function WeeklyArchivePage() {
-  const { reports, currentUser, workspaceId, addReport, deleteReport } = useWorkspaceData();
+  const { reports, users, currentUser, workspaceId, addReport, deleteReport } = useWorkspaceData();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,18 +69,38 @@ export default function WeeklyArchivePage() {
     toast("success", "삭제되었습니다.");
   };
 
+  // 주간보고 상세와 동일한 다운로드(exportToDoc) — 업로드 보관본도 원본 docx 기준으로 재빌드.
+  const handleDownload = async (report: Report) => {
+    const author = users.find((u) => u.id === report.authorId);
+    const pc = parseContent(report.content, report.type);
+    try {
+      await exportToDoc(report, author?.name || "알 수 없음", undefined, pc, users);
+    } catch (e) {
+      console.error("archive download failed", e);
+      toast("error", "다운로드에 실패했습니다.");
+    }
+  };
+
   return (
     <AppLayout
       title="주간보고 리스트"
       description={selected ? "보기 전용" : "지난 주간보고를 업로드해 보관하고, 작성 시 '지난주 보기'로 참고하세요"}
       actions={
         selected ? (
-          <button
-            onClick={() => setSelectedId(null)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium text-muted-foreground hover:bg-accent/15 hover:text-accent transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" /> 목록으로
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleDownload(selected)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-all"
+            >
+              <Download className="w-4 h-4" /> 다운로드
+            </button>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium text-muted-foreground hover:bg-accent/15 hover:text-accent transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" /> 목록으로
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => fileRef.current?.click()}
@@ -145,6 +166,13 @@ export default function WeeklyArchivePage() {
                     <Calendar className="w-3 h-3" /> 보고일 {date}
                   </p>
                 </div>
+              </button>
+              <button
+                onClick={() => handleDownload(r)}
+                className="p-2 rounded-lg text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+                title="다운로드"
+              >
+                <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleDelete(r)}
