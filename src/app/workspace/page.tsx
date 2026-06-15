@@ -8,6 +8,7 @@ import { Zap, Plus, Users, Settings, LogOut, UserPlus } from "lucide-react";
 import type { Workspace } from "@/lib/types";
 import { toast } from "@/components/Toast";
 import { cn } from "@/lib/utils";
+import { avatarColor } from "@/lib/userColor";
 
 export default function WorkspacePage() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function WorkspacePage() {
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold"
-                  style={{ background: currentUser.color }}
+                  style={{ background: avatarColor(currentUser.id) }}
                 >
                   {currentUser.name.slice(0, 1)}
                 </div>
@@ -231,7 +232,7 @@ export default function WorkspacePage() {
                   if (!u) return null;
                   return (
                     <div key={uid} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-background border border-border">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: u.color }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: avatarColor(u.id) }}>
                         {u.name.slice(0, 1)}
                       </div>
                       <span className="text-[13px] text-foreground flex-1">{u.name}</span>
@@ -248,7 +249,7 @@ export default function WorkspacePage() {
               <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
                 {allUsers.filter((u) => !editWs.members.includes(u.id)).map((u) => (
                   <div key={u.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-background border border-border">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: u.color }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: avatarColor(u.id) }}>
                       {u.name.slice(0, 1)}
                     </div>
                     <span className="text-[13px] text-foreground flex-1">{u.name}</span>

@@ -5,6 +5,7 @@ import AppLayout from "@/components/AppLayout";
 import Modal, { FormField, FormInput, FormSelect, FormButton } from "@/components/Modal";
 import { useWorkspaceData } from "@/lib/useWorkspaceData";
 import { cn } from "@/lib/utils";
+import { avatarColor } from "@/lib/userColor";
 import type { MemberRole } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/types";
 import { toast } from "@/components/Toast";
@@ -163,7 +164,7 @@ export default function TeamPage() {
                       <div className="flex items-start gap-4">
                         <div
                           className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
-                          style={{ background: user.color }}
+                          style={{ background: avatarColor(user.id) }}
                         >
                           {user.name.slice(0, 1)}
                         </div>
@@ -255,7 +256,7 @@ export default function TeamPage() {
             <div className="flex items-center gap-4">
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
-                style={{ background: selectedUser.color }}
+                style={{ background: avatarColor(selectedUser.id) }}
               >
                 {selectedUser.name.slice(0, 1)}
               </div>

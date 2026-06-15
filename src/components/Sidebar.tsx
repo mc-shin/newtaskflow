@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAppStore } from "@/lib/store";
 import Modal, { FormField, FormInput, FormButton } from "./Modal";
 import { toast } from "./Toast";
+import { avatarColor } from "@/lib/userColor";
 import {
   FileBarChart,
   LogOut,
@@ -129,7 +130,7 @@ export default function Sidebar() {
               >
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 group-hover/profile:ring-2 group-hover/profile:ring-accent/50 transition-all"
-                  style={{ background: currentUser.color }}
+                  style={{ background: avatarColor(currentUser.id) }}
                 >
                   {currentUser.name.slice(0, 1)}
                 </div>
@@ -158,7 +159,7 @@ export default function Sidebar() {
           <div className="flex justify-center">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold"
-              style={{ background: currentUser?.color }}
+              style={{ background: currentUser ? avatarColor(currentUser.id) : undefined }}
             >
               {name.slice(0, 1) || currentUser?.name.slice(0, 1)}
             </div>

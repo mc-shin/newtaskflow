@@ -21,6 +21,7 @@ import {
 import type { StructuredContent } from "@/lib/report-utils";
 import { toast } from "@/components/Toast";
 import { exportToDoc } from "@/lib/docx-export";
+import { avatarColor } from "@/lib/userColor";
 
 // Auto-continue numbered/lettered list patterns when Enter is pressed at the end of
 // a line that starts with "1. ", "가. ", "1) ", "가) ", or a bullet symbol.
@@ -697,7 +698,7 @@ function mergeHtmlSubmissions(
       if (!subText || subText === origText) return;
 
       perCellAuthors[i].add(user.name);
-      const safeColor = (user.color || "#6366f1").replace(/[^#0-9a-fA-F]/g, "");
+      const safeColor = avatarColor(user.id);
       // 사용자 요청: chip 라벨은 역할만 표시 ([중간관리자], [팀원] 등). 이름 노출 X —
       // 누가 작성했는지보다 "어느 단계의 기여인지" 만 보이도록.
       const roleShort = user.role === "member" ? "팀원"
@@ -746,7 +747,7 @@ function smartMergeNewSubmissions(
     try { subContent = JSON.parse(sub.content); } catch { continue; }
     if (!subContent.html) continue;
     const subCells = Array.from(parser.parseFromString(subContent.html, "text/html").querySelectorAll("td"));
-    const safeColor = (user.color || "#6366f1").replace(/[^#0-9a-fA-F]/g, "");
+    const safeColor = avatarColor(user.id);
     const roleShort = user.role === "member" ? "팀원"
       : user.role === "mid_manager" ? "중간관리자"
       : (user.role === "final_manager" || user.role === "admin") ? "최종관리자" : "관리자";
@@ -781,7 +782,7 @@ function appendManagerWorkspaceToCells(
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const cells = Array.from(doc.querySelectorAll("td"));
-  const safeColor = (manager.color || "#6366f1").replace(/[^#0-9a-fA-F]/g, "");
+  const safeColor = avatarColor(manager.id);
 
   cells.forEach((cell, i) => {
     const authors = perCellAuthors[i];
@@ -1231,13 +1232,13 @@ function HtmlMergedView({
                         submitted ? "border" : "border-2 border-dashed",
                       )}
                       style={submitted
-                        ? { borderColor: u.color + "55", backgroundColor: u.color + "12" }
+                        ? { borderColor: avatarColor(u.id) + "55", backgroundColor: avatarColor(u.id) + "12" }
                         : { borderColor: "rgba(239, 68, 68, 0.55)", backgroundColor: "rgba(239, 68, 68, 0.08)" }}
                     >
                       <div className="relative flex-shrink-0">
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold"
-                          style={{ backgroundColor: submitted ? u.color : "#94a3b8" }}
+                          style={{ backgroundColor: submitted ? avatarColor(u.id) : "#94a3b8" }}
                         >
                           {u.name[0]}
                         </div>
@@ -1385,7 +1386,7 @@ function SectionGridView({
                       <div key={user.id} className="group/contrib">
                         {/* Header line: [letter] name (stage)  [+ 인용] */}
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-[13px] whitespace-nowrap" style={{ color: user.color }}>
+                          <span className="font-bold text-[13px] whitespace-nowrap" style={{ color: avatarColor(user.id) }}>
                             [{letter}]
                           </span>
                           <span className="text-[13px] font-semibold text-white">{user.name}</span>
@@ -1564,7 +1565,7 @@ function StackedPersonView({
                 {/* Header line: [a] name (stage, date) [전체 인용 button] */}
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-foreground" style={{ color: user.color }}>[{letter}]</span>
+                    <span className="font-bold text-foreground" style={{ color: avatarColor(user.id) }}>[{letter}]</span>
                     <span className="font-semibold text-white text-[14px]">{user.name}</span>
                     <span className="text-muted-foreground text-[12px]">
                       ({stageLabel[stage]}{sub ? `, ${sub.submittedAt.split("T")[0]}` : ""})
@@ -1644,7 +1645,7 @@ function StackedPersonView({
               .filter((e) => !hideEmpty || e.hasSubmission)
               .map(({ letter, user, stage, hasSubmission }) => (
                 <div key={user.id} className="flex items-center gap-2">
-                  <span className="font-bold font-mono" style={{ color: user.color }}>[{letter}]</span>
+                  <span className="font-bold font-mono" style={{ color: avatarColor(user.id) }}>[{letter}]</span>
                   <span className="text-foreground">{user.name}</span>
                   <span className="text-muted">({stageLabel[stage]})</span>
                   {!hasSubmission && <span className="text-[10px] text-danger">미제출</span>}
@@ -1679,7 +1680,7 @@ function MemberContribCard({ user, content, stage, canQuote, onQuote }: {
       <div className="flex items-center gap-2 mb-2">
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] text-white font-bold flex-shrink-0"
-          style={{ backgroundColor: user.color }}
+          style={{ backgroundColor: avatarColor(user.id) }}
         >
           {user.name[0]}
         </div>
@@ -1724,7 +1725,7 @@ function StageTab({ user, submission, selected, onClick }: {
     >
       <div
         className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] text-white font-medium flex-shrink-0"
-        style={{ backgroundColor: user.color }}
+        style={{ backgroundColor: avatarColor(user.id) }}
       >
         {user.name[0]}
       </div>
