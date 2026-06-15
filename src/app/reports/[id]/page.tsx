@@ -344,10 +344,31 @@ function lvlRebuild(items: LvlItem[], tag: string, targetSrc: HTMLElement): { fr
   return { frag, newTarget };
 }
 
+// 붙여넣기 정제 — base64 이미지(data:URI)·스크립트·스타일 등 무겁고 불필요한 마크업 제거.
+// 텍스트·표·목록·기본 서식은 보존.  이전 보고서를 복붙할 때 base64 이미지(로고 등)가 본문에
+// 복제돼 전송량·DB용량이 폭증하던 문제를 막는다.
+function sanitizePastedHtml(html: string): string {
+  if (typeof window === "undefined") return html;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("script, style, meta, link, title, base").forEach((el) => el.remove());
+  doc.querySelectorAll("img").forEach((img) => {
+    if ((img.getAttribute("src") || "").startsWith("data:")) img.remove();   // base64 인라인 이미지 제거
+  });
+  doc.querySelectorAll("[style]").forEach((el) => {
+    const s = el.getAttribute("style") || "";
+    if (/url\(\s*['"]?data:/i.test(s)) el.setAttribute("style", s.replace(/[^;]*url\(\s*['"]?data:[^)]*\)[^;]*;?/gi, ""));
+  });
+  return doc.body.innerHTML;
+}
+
 function HtmlEditor({ htmlRef, initialHtml }: { htmlRef: React.RefObject<HTMLDivElement | null>; initialHtml: string }) {
+  // 사용자가 편집을 시작하면 true.  이후 폴링/리렌더로 initialHtml 이 바뀌어도 innerHTML 을
+  // 덮어쓰지 않아, 작성 중 내용이 "수정 전"으로 깜빡이거나 사라지는 문제를 막는다.
+  const dirtyRef = useRef(false);
   useEffect(() => {
     // 모든 진입 HTML 에 fillEmptyCells 적용 — 빈 <td> 에 placeholder 채워서 커서 진입 보장.
     // 멱등 (이미 placeholder 있으면 건드리지 않음) 이라 여러 번 호출되어도 안전.
+    if (dirtyRef.current) return;   // 편집 중이면 덮어쓰지 않음 (유실/깜빡임 방지)
     if (htmlRef.current) htmlRef.current.innerHTML = fillEmptyCells(initialHtml);
   }, [initialHtml]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -462,12 +483,22 @@ function HtmlEditor({ htmlRef, initialHtml }: { htmlRef: React.RefObject<HTMLDiv
     }
   }
 
+  function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    const html = e.clipboardData.getData("text/html");
+    if (!html) return;                       // 순수 텍스트는 기본 동작에 위임 (base64 없음)
+    e.preventDefault();
+    dirtyRef.current = true;
+    document.execCommand("insertHTML", false, sanitizePastedHtml(html));
+  }
+
   return (
     <div
       ref={htmlRef}
       contentEditable
       suppressContentEditableWarning
       onKeyDown={handleKeyDown}
+      onPaste={handlePaste}
+      onInput={() => { dirtyRef.current = true; }}
       className="w-full min-h-[600px] overflow-y-auto px-6 py-5 bg-background border border-border rounded-xl text-[14px] text-foreground outline-none focus:border-accent transition-colors
         [&_h1]:text-[20px] [&_h1]:font-bold [&_h1]:text-white [&_h1]:mb-3 [&_h1]:mt-4
         [&_h2]:text-[17px] [&_h2]:font-semibold [&_h2]:text-white [&_h2]:mb-2 [&_h2]:mt-4
@@ -2082,6 +2113,11 @@ export default function ReportDetailPage() {
   }, [reportId]);
 
   const report = reports.find((r) => r.id === reportId);
+  // content(최대 200KB+, base64 포함)를 매 렌더 JSON.parse 하지 않도록 메모이즈 — 깜빡임/렉 완화.
+  const parsedContent = useMemo(
+    () => (report ? parseContent(report.content, report.type) : { sections: [], html: "" }),
+    [report?.content, report?.type],
+  );
 
   // 캐시(store)에 보고서가 이미 있으면 로딩 화면 없이 즉시 렌더하고, 최신 데이터는
   // 백그라운드(refreshReport)로 갱신한다.  목록에서 들어온 경우 store 에 최신 내용·제출본이
@@ -2108,7 +2144,6 @@ export default function ReportDetailPage() {
 
   const author = users.find((u) => u.id === report.authorId);
   const project = projects.find((p) => p.id === report.projectId);
-  const parsedContent = parseContent(report.content, report.type);
 
   const role = currentUser?.role;
   const canDistributeOrClose = role === "admin" || role === "final_manager";
