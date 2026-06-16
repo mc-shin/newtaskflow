@@ -11,6 +11,12 @@ const users: User[] = [];
 const workspaces: Workspace[] = [];
 const reports: Report[] = [];
 
+// 낙관적으로 삭제한 보고서 id 들.  삭제 직전/직후에 떠난 refreshReports(서버 옛 목록)가 늦게
+// 도착해 이미 지운 보고서를 "되살려" 화면이 번갈아 깜빡이던 문제를 막는다.  새로고침이 이 집합의
+// id 는 다시 추가하지 않는다.  세션 동안만 유지(보고서 id 는 uuid 라 재사용 없음), persist 안 함.
+// 삭제 API 가 실패해 복원할 때만 제거한다.
+const deletedReportIds = new Set<string>();
+
 interface AppState {
   _hydrated: boolean;
   wsDataLoading: boolean; // 워크스페이스 데이터(멤버·보고서) 로딩 중 여부 — "로딩"과 "빈 상태" 구분용
@@ -289,10 +295,12 @@ export const useAppStore = create<AppState>()(
       },
       deleteReport: async (reportId) => {
         const snapshot = get().reports;
+        deletedReportIds.add(reportId);     // 새로고침이 이 보고서를 되살리지 못하게 가드
         set((s) => ({ reports: s.reports.filter((r) => r.id !== reportId) }));
         try { await api.reports.delete(reportId); }
         catch (e) {
           console.error("deleteReport failed", e);
+          deletedReportIds.delete(reportId); // 삭제 실패 → 복원하므로 가드 해제
           set({ reports: snapshot }); // revert
         }
       },
@@ -463,6 +471,7 @@ export const useAppStore = create<AppState>()(
             status: r.status,
             submissions: r.submissions as Report["submissions"],
           };
+          if (deletedReportIds.has(reportId)) return; // 삭제된 보고서는 되살리지 않음
           set((s) => ({
             reports: s.reports.some((r2) => r2.id === reportId)
               ? s.reports.map((r2) => (r2.id === reportId ? mapped : r2))
@@ -489,7 +498,7 @@ export const useAppStore = create<AppState>()(
           set((s) => ({
             reports: [
               ...s.reports.filter((r) => r.workspaceId !== wsId),
-              ...mapped,
+              ...mapped.filter((r) => !deletedReportIds.has(r.id)), // 낙관적으로 삭제한 보고서는 되살리지 않음
             ],
           }));
         } catch (e) {
