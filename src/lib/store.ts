@@ -17,6 +17,36 @@ const reports: Report[] = [];
 // 삭제 API 가 실패해 복원할 때만 제거한다.
 const deletedReportIds = new Set<string>();
 
+// 낙관적으로 제출(또는 재제출)한 내용.  제출 직전 출발한 폴링(서버 옛값)이 제출 직후 늦게 도착해
+// 방금 쓴 내용을 "수정 전"으로 되돌리며 깜빡이던 문제를 막는다.  키는 `${reportId}|${userId}`.
+// refreshReport/refreshReports 가 서버 제출본으로 통째 교체할 때, 이 맵에 있는 사용자의 제출본은
+// 서버가 같은 내용을 돌려줄 때까지(따라잡을 때까지) 로컬 낙관적 값을 유지한다.  서버가 따라잡으면 해제.
+// 세션 동안만 유지(persist 안 함).  제출 API 성공 후에만 기록하므로 서버는 곧 같은 값을 돌려준다.
+const pendingSubmissions = new Map<string, string>();
+
+// 서버에서 받은 submissions 에 낙관적 제출 보호를 적용한다.  보호 중인(아직 서버가 따라잡지 못한)
+// 사용자의 제출본은 로컬 낙관적 값을 유지하고, 서버가 같은 내용을 돌려주면 보호를 해제한다.
+function reconcileSubmissions(
+  reportId: string,
+  serverSubs: Report["submissions"],
+  localSubs: Report["submissions"],
+): Report["submissions"] {
+  if (pendingSubmissions.size === 0) return serverSubs;
+  const result: NonNullable<Report["submissions"]> = { ...(serverSubs || {}) };
+  for (const [key, pendingContent] of pendingSubmissions) {
+    const sep = key.indexOf("|");
+    if (key.slice(0, sep) !== reportId) continue;
+    const uid = key.slice(sep + 1);
+    const serverSub = result[uid];
+    if (serverSub && serverSub.content === pendingContent) {
+      pendingSubmissions.delete(key); // 서버가 따라잡음 → 보호 해제 (이후 정상 폴링)
+    } else if (localSubs && localSubs[uid]) {
+      result[uid] = localSubs[uid]; // 서버가 아직 옛값/없음 → 낙관적 제출본 유지 (덮어쓰기 방지)
+    }
+  }
+  return result;
+}
+
 interface AppState {
   _hydrated: boolean;
   wsDataLoading: boolean; // 워크스페이스 데이터(멤버·보고서) 로딩 중 여부 — "로딩"과 "빈 상태" 구분용
@@ -319,6 +349,7 @@ export const useAppStore = create<AppState>()(
       submitReport: async (reportId, userId, content, stage) => {
         try {
           await api.reports.submit(reportId, { content, stage });
+          pendingSubmissions.set(`${reportId}|${userId}`, content); // 진행 중이던 폴링이 이 내용을 되돌리지 못하게 보호
           set((s) => ({
             reports: s.reports.map((r) => {
               if (r.id !== reportId) return r;
@@ -472,11 +503,16 @@ export const useAppStore = create<AppState>()(
             submissions: r.submissions as Report["submissions"],
           };
           if (deletedReportIds.has(reportId)) return; // 삭제된 보고서는 되살리지 않음
-          set((s) => ({
-            reports: s.reports.some((r2) => r2.id === reportId)
-              ? s.reports.map((r2) => (r2.id === reportId ? mapped : r2))
-              : [...s.reports, mapped],
-          }));
+          set((s) => {
+            const local = s.reports.find((r2) => r2.id === reportId);
+            // 진행 중이던 폴링이 방금 제출한 내용을 옛값으로 되돌리지 않게 보호
+            const finalReport: Report = { ...mapped, submissions: reconcileSubmissions(reportId, mapped.submissions, local?.submissions) };
+            return {
+              reports: s.reports.some((r2) => r2.id === reportId)
+                ? s.reports.map((r2) => (r2.id === reportId ? finalReport : r2))
+                : [...s.reports, finalReport],
+            };
+          });
         } catch (e) {
           console.error("refreshReport failed", e);
         }
@@ -498,7 +534,9 @@ export const useAppStore = create<AppState>()(
           set((s) => ({
             reports: [
               ...s.reports.filter((r) => r.workspaceId !== wsId),
-              ...mapped.filter((r) => !deletedReportIds.has(r.id)), // 낙관적으로 삭제한 보고서는 되살리지 않음
+              ...mapped
+                .filter((r) => !deletedReportIds.has(r.id)) // 낙관적으로 삭제한 보고서는 되살리지 않음
+                .map((m) => ({ ...m, submissions: reconcileSubmissions(m.id, m.submissions, s.reports.find((r) => r.id === m.id)?.submissions) })),
             ],
           }));
         } catch (e) {
